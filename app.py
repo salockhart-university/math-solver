@@ -45,14 +45,12 @@ with open("tests.in") as f:
     UTTERANCES = f.readlines()
 
 GRAMMAR = nltk.CFG.fromstring("""
-    S -> S OP S | OP S 'and' S | NUM
+    S -> S OP S | OP S 'and' S | 'subtract' THOU | THOU
     OP -> 'add' | 'subtract' | 'multiply' | 'divide'
-    NUM -> 'subtract' NUM
-    NUM -> THOU | HUN | TEEN | CD
-    THOU -> CD 'thousand' HUN | CD 'thousand' TEEN | CD 'thousand' CD
-    HUN -> CD 'hundred' TEEN | CD 'hundred' CD
+    THOU -> HUN | CD 'thousand' HUN | CD 'thousand' 'and' HUN | CD 'thousand'
+    HUN -> TEEN | CD 'hundred' TEEN | CD 'hundred' 'and' TEEN | CD 'hundred'
+    TEEN -> CD | TEN CD | TEN
     TEEN -> 'ten' | 'eleven' | 'twelve' | 'thirteen' | 'fourteen' | 'fifteen' | 'sixteen' | 'seventeen' | 'eighteen' | 'nineteen'
-    TEEN -> TEN CD | TEN
     TEN -> 'twenty' | 'thirty' | 'forty' | 'fifty' | 'sixty' | 'seventy' | 'eighty' | 'ninety'
     CD -> 'zero' | 'one' | 'two' | 'three' | 'four' | 'five' | 'six' | 'seven' | 'eight' | 'nine'
 """)
@@ -62,14 +60,11 @@ PARSER = nltk.ChartParser(GRAMMAR)
 LEMMATIZER = WordNetLemmatizer()
 
 for utterance in UTTERANCES:
-    # print "Utterance:", utterance.strip()
     tokens = nltk.word_tokenize(utterance)
     for i in range(0, len(tokens)):
         tokens[i] = LEMMATIZER.lemmatize(tokens[i], pos="v")
     utterance = " ".join(tokens)
-    # print "Stemmed:", utterance
     for operation in OPERATION_ORDER:
-        # print "Operation:", operation
         for variant in OPERATIONS[operation]:
             utterance = utterance.replace(variant, operation)
     tokens = nltk.word_tokenize(utterance)
