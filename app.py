@@ -4,8 +4,16 @@ CSCI 4152 Project
 """
 
 import nltk
+from nltk.stem import WordNetLemmatizer
 
 UTTERANCES = []
+
+OPERATION_ORDER = [
+    "add",
+    "subtract",
+    "divide",
+    "multiply"
+]
 
 OPERATIONS = {
     "add": [
@@ -16,30 +24,56 @@ OPERATIONS = {
     "subtract": [
         "subtract",
         "minus",
-        "difference"
-    ],
-    "times": [
-        "times",
-        "multiply",
-        "product",
-        "by"
+        "difference of",
+        "negative"
     ],
     "divide": [
+        "divide by",
         "divide",
         "over"
     ],
-    "negative": [
-        "negative",
-        "minus"
+    "multiply": [
+        "multiply by",
+        "time",
+        "multiply",
+        "product of",
+        "by"
     ]
 }
 
 with open("tests.in") as f:
     UTTERANCES = f.readlines()
 
+GRAMMAR = nltk.CFG.fromstring("""
+    S -> S OP S | OP S 'and' S | NUM
+    OP -> 'add' | 'subtract' | 'multiply' | 'divide'
+    NUM -> 'subtract' NUM
+    NUM -> THOU | HUN | TEEN | CD
+    THOU -> CD 'thousand' HUN | CD 'thousand' TEEN | CD 'thousand' CD
+    HUN -> CD 'hundred' TEEN | CD 'hundred' CD
+    TEEN -> 'ten' | 'eleven' | 'twelve' | 'thirteen' | 'fourteen' | 'fifteen' | 'sixteen' | 'seventeen' | 'eighteen' | 'nineteen'
+    TEEN -> TEN CD | TEN
+    TEN -> 'twenty' | 'thirty' | 'forty' | 'fifty' | 'sixty' | 'seventy' | 'eighty' | 'ninety'
+    CD -> 'zero' | 'one' | 'two' | 'three' | 'four' | 'five' | 'six' | 'seven' | 'eight' | 'nine'
+""")
+
+PARSER = nltk.ChartParser(GRAMMAR)
+
+LEMMATIZER = WordNetLemmatizer()
+
 for utterance in UTTERANCES:
+    # print "Utterance:", utterance.strip()
+    tokens = nltk.word_tokenize(utterance)
+    for i in range(0, len(tokens)):
+        tokens[i] = LEMMATIZER.lemmatize(tokens[i], pos="v")
+    utterance = " ".join(tokens)
+    # print "Stemmed:", utterance
+    for operation in OPERATION_ORDER:
+        # print "Operation:", operation
+        for variant in OPERATIONS[operation]:
+            utterance = utterance.replace(variant, operation)
     tokens = nltk.word_tokenize(utterance)
     print tokens
-    tagged = nltk.pos_tag(tokens)
-    print tagged
+    for tree in PARSER.parse(tokens):
+        print tree
     print
