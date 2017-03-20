@@ -3,9 +3,38 @@
 CSCI 4152 Project - Tests
 """
 
+import app
+
+COLOR_GREEN = "\033[92m"
+COLOR_YELLOW = "\033[93m"
+COLOR_RED = "\033[91m"
+COLOR_END = "\033[0m"
+
 INPUT = []
 OUTPUT = []
 ACTUAL = []
+
+CORRECT = 0
+AMBIGUOUS = 0
+INCORRECT = 0
+
+def correct(test, expected, actual):
+    print COLOR_GREEN
+    common(test, expected, actual)
+
+def ambiguous(test, expected, actual):
+    print COLOR_YELLOW
+    common(test, expected, actual)
+
+def incorrect(test, expected, actual):
+    print COLOR_RED
+    common(test, expected, actual)
+
+def common(test, expected, actual):
+    print "Test:", test
+    print "Expected:", expected
+    print "Actual:", actual
+    print COLOR_END
 
 with open("tests.in") as f:
     INPUT = f.readlines()
@@ -22,7 +51,19 @@ for i in range(0, len(OUTPUT)):
     OUTPUT[i] = OUTPUT[i].strip()
 
 for i in range(0, NUM_TESTS):
-    print "Test: %s" % INPUT[i]
-    print "Expected: %s" % OUTPUT[i]
-    print "Actual:"
-    print "\n"
+    test = INPUT[i]
+    expected = OUTPUT[i]
+    actual = app.get_value(INPUT[i])
+    if len(actual) == 1 and actual[0] - float(expected) < 0.01:
+        CORRECT += 1
+        correct(test, expected, actual)
+    elif float(expected) in actual:
+        AMBIGUOUS += 1
+        ambiguous(test, expected, actual)
+    else:
+        INCORRECT += 1
+        incorrect(test, expected, actual)
+
+print COLOR_GREEN, "CORRECT:", CORRECT, COLOR_END
+print COLOR_YELLOW, "AMBIGUOUS:", AMBIGUOUS, COLOR_END
+print COLOR_RED, "INCORRECT:", INCORRECT, COLOR_END
