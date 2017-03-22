@@ -54,7 +54,7 @@ for i in range(0, NUM_TESTS):
     test = INPUT[i]
     expected = OUTPUT[i]
     actual = app.get_value(INPUT[i])
-    if len(actual) == 1 and actual[0] - float(expected) < 0.01:
+    if len(actual) == 1 and abs(actual[0] - float(expected)) < 0.01:
         CORRECT += 1
         correct(test, expected, actual)
     elif float(expected) in actual:
