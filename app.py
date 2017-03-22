@@ -4,6 +4,7 @@ CSCI 4152 Project
 """
 
 import nltk
+from nltk.parse import pchart
 from nltk.stem import WordNetLemmatizer
 
 OPERATION_ORDER = [
@@ -39,18 +40,66 @@ OPERATIONS = {
     ]
 }
 
-GRAMMAR = nltk.CFG.fromstring("""
-    S -> S OP S | OP S 'and' S | 'subtract' S | THOU
-    OP -> 'add' | 'subtract' | 'multiply' | 'divide'
-    THOU -> HUN | CD 'thousand' HUN | CD 'thousand' 'and' HUN | CD 'thousand'
-    HUN -> TEEN | CD 'hundred' TEEN | CD 'hundred' 'and' TEEN | CD 'hundred'
-    TEEN -> CD | TEN CD | TEN
-    TEEN -> 'ten' | 'eleven' | 'twelve' | 'thirteen' | 'fourteen' | 'fifteen' | 'sixteen' | 'seventeen' | 'eighteen' | 'nineteen'
-    TEN -> 'twenty' | 'thirty' | 'forty' | 'fifty' | 'sixty' | 'seventy' | 'eighty' | 'ninety'
-    CD -> 'zero' | 'one' | 'two' | 'three' | 'four' | 'five' | 'six' | 'seven' | 'eight' | 'nine'
+GRAMMAR = nltk.PCFG.fromstring("""
+    S -> S OP S                         [0.25]
+    S -> OP S 'and' S                   [0.25]
+    S -> 'subtract' S                   [0.25]
+    S -> THOU                           [0.25]
+
+    OP -> 'add'                         [0.25]
+    OP -> 'subtract'                    [0.25]
+    OP -> 'multiply'                    [0.25]
+    OP -> 'divide'                      [0.25]
+
+    THOU -> HUN                         [0.25]
+    THOU -> CD 'thousand' HUN           [0.25]
+    THOU -> CD 'thousand' 'and' HUN     [0.25]
+    THOU -> CD 'thousand'               [0.25]
+
+    HUN -> TEEN                         [0.25]
+    HUN -> CD 'hundred' TEEN            [0.25]
+    HUN -> CD 'hundred' 'and' TEEN      [0.25]
+    HUN -> CD 'hundred'                 [0.25]
+
+    TEEN -> CD                          [0.076923077]
+    TEEN -> TEN CD                      [0.076923077]
+    TEEN -> TEN                         [0.076923077]
+
+    TEEN -> 'ten'                       [0.076923077]
+    TEEN -> 'eleven'                    [0.076923077]
+    TEEN -> 'twelve'                    [0.076923077]
+    TEEN -> 'thirteen'                  [0.076923077]
+    TEEN -> 'fourteen'                  [0.076923077]
+    TEEN -> 'fifteen'                   [0.076923077]
+    TEEN -> 'sixteen'                   [0.076923077]
+    TEEN -> 'seventeen'                 [0.076923077]
+    TEEN -> 'eighteen'                  [0.076923077]
+    TEEN -> 'nineteen'                  [0.076923077]
+
+    TEN -> 'twenty'                     [0.125]
+    TEN -> 'thirty'                     [0.125]
+    TEN -> 'forty'                      [0.125]
+    TEN -> 'fifty'                      [0.125]
+    TEN -> 'sixty'                      [0.125]
+    TEN -> 'seventy'                    [0.125]
+    TEN -> 'eighty'                     [0.125]
+    TEN -> 'ninety'                     [0.125]
+
+    CD -> 'zero'                        [0.1]
+    CD -> 'one'                         [0.1]
+    CD -> 'two'                         [0.1]
+    CD -> 'three'                       [0.1]
+    CD -> 'four'                        [0.1]
+    CD -> 'five'                        [0.1]
+    CD -> 'six'                         [0.1]
+    CD -> 'seven'                       [0.1]
+    CD -> 'eight'                       [0.1]
+    CD -> 'nine'                        [0.1]
 """)
 
-PARSER = nltk.ChartParser(GRAMMAR)
+# PARSER = nltk.ChartParser(GRAMMAR)
+# PARSER = nltk.ViterbiParser(GRAMMAR)
+PARSER = pchart.InsideChartParser(GRAMMAR)
 
 LEMMATIZER = WordNetLemmatizer()
 
@@ -269,6 +318,7 @@ def get_value(utterance):
     possibles = []
 
     for tree in PARSER.parse(tokens):
+        print tree
         possibles.append(parse_s(tree))
 
     return possibles
