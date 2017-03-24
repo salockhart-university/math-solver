@@ -3,6 +3,7 @@
 CSCI 4152 Project
 """
 
+import sys
 import nltk
 from nltk.parse import pchart
 from nltk.stem import WordNetLemmatizer
@@ -41,15 +42,21 @@ OPERATIONS = {
 }
 
 GRAMMAR = nltk.PCFG.fromstring("""
-    S -> S OP S                         [0.25]
-    S -> OP S 'and' S                   [0.25]
-    S -> 'subtract' S                   [0.25]
-    S -> THOU                           [0.25]
+    S -> S ADD S                        [0.2]
+    S -> ADD S 'and' S                  [0.2]
+    S -> 'subtract' S                   [0.2]
+    S -> THOU                           [0.2]
+    S -> T                              [0.2]
 
-    OP -> 'add'                         [0.25]
-    OP -> 'subtract'                    [0.25]
-    OP -> 'multiply'                    [0.25]
-    OP -> 'divide'                      [0.25]
+    T -> T MUL T                        [0.25]
+    T -> MUL T 'and' T                  [0.25]
+    T -> 'subtract' T                   [0.25]
+    T -> THOU                           [0.25]
+
+    ADD -> 'add'                        [0.5]
+    ADD -> 'subtract'                   [0.5]
+    MUL -> 'multiply'                   [0.5]
+    MUL -> 'divide'                     [0.5]
 
     THOU -> HUN                         [0.25]
     THOU -> CD 'thousand' HUN           [0.25]
@@ -97,8 +104,6 @@ GRAMMAR = nltk.PCFG.fromstring("""
     CD -> 'nine'                        [0.1]
 """)
 
-# PARSER = nltk.ChartParser(GRAMMAR)
-# PARSER = nltk.ViterbiParser(GRAMMAR)
 PARSER = pchart.InsideChartParser(GRAMMAR)
 
 LEMMATIZER = WordNetLemmatizer()
@@ -153,7 +158,11 @@ def calc(operation, args):
 
 def parse_s(tree):
     """
-    S -> S OP S | OP S 'and' S | 'subtract' S | THOU
+    S -> S ADD S                        [0.2]
+    S -> ADD S 'and' S                  [0.2]
+    S -> 'subtract' S                   [0.2]
+    S -> THOU                           [0.2]
+    S -> T                              [0.2]
     tree is the result of the parsing in the grammar
     S can just be a value, so if we find the THOU child we return its value
     otherwise, grab the operation and the args and return the result
@@ -168,10 +177,40 @@ def parse_s(tree):
             continue
         elif subtree.label() == "S":
             args.append(parse_s(subtree))
-        elif subtree.label() == "OP":
+        elif subtree.label() == "ADD":
             operation = parse_op(subtree)
         elif subtree.label() == "THOU":
             return parse_thousands(subtree)
+        elif subtree.label() == "T":
+            return parse_t(subtree)
+    return calc(operation, args)
+
+def parse_t(tree):
+    """
+    T -> T MUL T                        [0.25]
+    T -> MUL T 'and' T                  [0.25]
+    T -> 'subtract' T                   [0.25]
+    T -> THOU                           [0.25]
+    tree is the result of the parsing in the grammar
+    S can just be a value, so if we find the THOU child we return its value
+    otherwise, grab the operation and the args and return the result
+    this will calculate the value recursively
+    """
+    args = []
+    operation = ""
+    for subtree in tree:
+        if subtree == "subtract":
+            operation = "subtract"
+        elif subtree == "and":
+            continue
+        elif subtree.label() == "T":
+            args.append(parse_t(subtree))
+        elif subtree.label() == "MUL":
+            operation = parse_op(subtree)
+        elif subtree.label() == "THOU":
+            return parse_thousands(subtree)
+        elif subtree.label() == "T":
+            return parse_t(subtree)
     return calc(operation, args)
 
 def parse_thousands(tree):
@@ -317,8 +356,24 @@ def get_value(utterance):
 
     possibles = []
 
+    max_width = -sys.maxint - 1
+    max_width_value = 0
+
     for tree in PARSER.parse(tokens):
-        print tree
-        possibles.append(parse_s(tree))
+        res = parse_s(tree)
+        width = len(tree)
+
+        # print tree, "=", res
+        # print "width =", width
+        # print
+        if res not in possibles:
+            possibles.append(res)
+
+        if width > max_width:
+            max_width = width
+            max_width_value = res
+
+    if len(possibles) > 1:
+        return [max_width_value]
 
     return possibles
