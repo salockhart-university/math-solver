@@ -15,6 +15,13 @@ OPERATION_ORDER = [
     "multiply"
 ]
 
+OPERATION_SYMBOL_MAPPING = {
+    "add": "+",
+    "subtract": "-",
+    "divide": "/",
+    "multiply": "*"
+}
+
 OPERATIONS = {
     "add": [
         "add",
@@ -170,20 +177,33 @@ def parse_s(tree):
     """
     args = []
     operation = ""
+    left_str = ""
+    right_str = ""
+    bracket_str = ()
     for subtree in tree:
         if subtree == "subtract":
             operation = "subtract"
         elif subtree == "and":
             continue
         elif subtree.label() == "S":
-            args.append(parse_s(subtree))
+            string, result = parse_s(subtree)
+            if left_str == "":
+                left_str = string
+            else:
+                right_str = string
+            args.append(result)
         elif subtree.label() == "ADD":
             operation = parse_op(subtree)
         elif subtree.label() == "THOU":
-            return parse_thousands(subtree)
+            result = parse_thousands(subtree)
+            return result, result
         elif subtree.label() == "T":
             return parse_t(subtree)
-    return calc(operation, args)
+    if len(args) == 2:
+        bracket_str = "(", left_str, operation, right_str, ")"
+    else:
+        bracket_str = "(", operation, left_str, ")"
+    return bracket_str, calc(operation, args)
 
 def parse_t(tree):
     """
@@ -198,20 +218,31 @@ def parse_t(tree):
     """
     args = []
     operation = ""
+    left_str = ""
+    right_str = ""
+    bracket_str = ()
     for subtree in tree:
         if subtree == "subtract":
             operation = "subtract"
         elif subtree == "and":
             continue
         elif subtree.label() == "T":
-            args.append(parse_t(subtree))
+            string, result = parse_t(subtree)
+            if left_str == "":
+                left_str = string
+            else:
+                right_str = string
+            args.append(result)
         elif subtree.label() == "MUL":
             operation = parse_op(subtree)
         elif subtree.label() == "THOU":
-            return parse_thousands(subtree)
-        elif subtree.label() == "T":
-            return parse_t(subtree)
-    return calc(operation, args)
+            result = parse_thousands(subtree)
+            return result, result
+    if len(args) == 2:
+        bracket_str = "(", left_str, operation, right_str, ")"
+    else:
+        bracket_str = "(", operation, left_str, ")"
+    return bracket_str, calc(operation, args)
 
 def parse_thousands(tree):
     """
@@ -340,6 +371,20 @@ def parse_op(tree):
     """
     return tree[0]
 
+def get_bracket_notation(str_rep):
+    notation = ""
+    if isinstance(str_rep, tuple):
+        for element in str_rep:
+            if isinstance(element, tuple):
+                notation = notation + get_bracket_notation(element)
+            elif element in OPERATION_ORDER:
+                notation = notation + OPERATION_SYMBOL_MAPPING[str(element)]
+            else:
+                notation = notation + str(element)
+    else:
+        notation = str(str_rep)
+    return notation
+
 def get_value(utterance):
     """
     For a given utternace, return the possible values from the parsing
@@ -355,25 +400,31 @@ def get_value(utterance):
     tokens = nltk.word_tokenize(utterance)
 
     possibles = []
+    str_reps = []
 
     max_width = -sys.maxint - 1
     max_width_value = 0
+    max_width_rep = ()
 
     for tree in PARSER.parse(tokens):
-        res = parse_s(tree)
+        string, res = parse_s(tree)
         width = len(tree)
+
+        string = get_bracket_notation(string)
 
         # print tree, "=", res
         # print "width =", width
         # print
         if res not in possibles:
             possibles.append(res)
+            str_reps.append(string)
 
         if width > max_width:
             max_width = width
             max_width_value = res
+            max_width_rep = string
 
     if len(possibles) > 1:
-        return [max_width_value]
+        return [max_width_value], [max_width_rep]
 
-    return possibles
+    return possibles, str_reps
