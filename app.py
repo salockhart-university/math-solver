@@ -413,6 +413,7 @@ def get_value(utterance):
         string = get_bracket_notation(string)
 
         # print tree, "=", res
+        # print string
         # print "width =", width
         # print
         if res not in possibles:
