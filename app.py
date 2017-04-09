@@ -51,13 +51,13 @@ OPERATIONS = {
 GRAMMAR = nltk.PCFG.fromstring("""
     S -> S ADD S                        [0.2]
     S -> ADD S 'and' S                  [0.2]
-    S -> 'subtract' S                   [0.2]
+    S -> 'subtract' THOU                [0.2]
     S -> THOU                           [0.2]
     S -> T                              [0.2]
 
     T -> T MUL T                        [0.25]
     T -> MUL T 'and' T                  [0.25]
-    T -> 'subtract' T                   [0.25]
+    T -> 'subtract' THOU                [0.25]
     T -> THOU                           [0.25]
 
     ADD -> 'add'                        [0.5]
@@ -167,7 +167,7 @@ def parse_s(tree):
     """
     S -> S ADD S                        [0.2]
     S -> ADD S 'and' S                  [0.2]
-    S -> 'subtract' S                   [0.2]
+    S -> 'subtract' THOU                [0.2]
     S -> THOU                           [0.2]
     S -> T                              [0.2]
     tree is the result of the parsing in the grammar
@@ -196,6 +196,8 @@ def parse_s(tree):
             operation = parse_op(subtree)
         elif subtree.label() == "THOU":
             result = parse_thousands(subtree)
+            if operation == "subtract":
+                return -result, -result
             return result, result
         elif subtree.label() == "T":
             return parse_t(subtree)
@@ -209,7 +211,7 @@ def parse_t(tree):
     """
     T -> T MUL T                        [0.25]
     T -> MUL T 'and' T                  [0.25]
-    T -> 'subtract' T                   [0.25]
+    T -> 'subtract' THOU                [0.25]
     T -> THOU                           [0.25]
     tree is the result of the parsing in the grammar
     S can just be a value, so if we find the THOU child we return its value
@@ -237,6 +239,8 @@ def parse_t(tree):
             operation = parse_op(subtree)
         elif subtree.label() == "THOU":
             result = parse_thousands(subtree)
+            if operation == "subtract":
+                return -result, -result
             return result, result
     if len(args) == 2:
         bracket_str = "(", left_str, operation, right_str, ")"
